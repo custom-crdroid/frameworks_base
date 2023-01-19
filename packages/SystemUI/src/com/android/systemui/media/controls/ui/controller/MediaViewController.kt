@@ -657,12 +657,12 @@ constructor(
             )
         }
 
-    fun attachPlayer(mediaViewHolder: MediaViewHolder) {
+    fun attachPlayer(mediaViewHolder: MediaViewHolder, alwaysOnTime: Boolean) {
         if (!mediaFlags.isSceneContainerEnabled()) return
         this.mediaViewHolder = mediaViewHolder
 
         // Setting up seek bar.
-        seekBarObserver = SeekBarObserver(mediaViewHolder)
+        seekBarObserver = SeekBarObserver(mediaViewHolder, alwaysOnTime)
         seekBarViewModel.progress.observeForever(seekBarObserver)
         seekBarViewModel.attachTouchHandlers(mediaViewHolder.seekBar)
         seekBarViewModel.setScrubbingChangeListener(scrubbingChangeListener)
