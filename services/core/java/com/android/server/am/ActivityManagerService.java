@@ -1714,9 +1714,6 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     static final HostingRecord sNullHostingRecord =
             new HostingRecord(HostingRecord.HOSTING_TYPE_EMPTY);
-
-    private boolean mThreeFingersSwipeEnabled;
-
     /**
      * Used to notify activity lifecycle events.
      */
@@ -21187,16 +21184,6 @@ public class ActivityManagerService extends IActivityManager.Stub
     @GuardedBy("this")
     void clearPendingTopAppLocked() {
         mPendingStartActivityUids.clear();
-    }
-
-    @Override
-    public boolean isThreeFingersSwipeActive() {
-        return mThreeFingersSwipeEnabled;
-    }
-
-    @Override
-    public void setThreeFingersSwipeActive(boolean active) {
-        mThreeFingersSwipeEnabled = active;
     }
 
     @Override
