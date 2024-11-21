@@ -146,7 +146,6 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
         mFullCircleDrawable = new FullCircleBatteryDrawable(context, frameColor);
         mRLandscapeDrawable = new RLandscapeBatteryDrawable(context, frameColor);
         mLandscapeDrawable = new LandscapeBatteryDrawable(context, frameColor);
-	mLandscapeDrawableiOS16 = new LandscapeBatteryDrawableiOS16(context, frameColor);
         atts.recycle();
 
         setupLayoutTransition();
