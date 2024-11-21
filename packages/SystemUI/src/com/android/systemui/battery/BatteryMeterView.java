@@ -667,8 +667,7 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
                                     || mBatteryStyle == BATTERY_STYLE_TEXT
                                     || mShowPercentMode == MODE_ON;
         showPercent = showPercent && !mBatteryStateUnknown
-                                    && mBatteryStyle != BATTERY_STYLE_HIDDEN
-                                    && mBatteryStyle != BATTERY_STYLE_LANDSCAPE_IOS16;
+                                    && mBatteryStyle != BATTERY_STYLE_HIDDEN;
 
         mAccessorizedDrawable.showPercent(drawPercentInside);
         mCircleDrawable.setShowPercent(drawPercentInside);
