@@ -103,7 +103,7 @@ public class PixelPropsUtils {
         final String processName = Application.getProcessName();
         boolean isExcludedProcess = processName != null && (processName.toLowerCase().contains("unstable"));
 
-        String[] packagesToChangePixel8Pro = {
+        String[] packagesToChangeRecentPixel  = {
             "com.google.android.apps.aiwallpapers",
             "com.google.android.apps.bard",
             "com.google.android.apps.customization.pixel",
@@ -127,7 +127,7 @@ public class PixelPropsUtils {
             "com.netflix.mediaclient"
         };
 
-        if (Arrays.asList(packagesToChangePixel8Pro).contains(packageName) && !isExcludedProcess) {
+        if (Arrays.asList(packagesToChangeRecentPixel ).contains(packageName) && !isExcludedProcess) {
             if (SystemProperties.getBoolean(SPOOF_PIXEL_GOOGLE_APPS, true)) {
                     propsToChange.putAll(propsToChangePixel9ProXL);
             } else if (packageName.equals("com.netflix.mediaclient") && 
