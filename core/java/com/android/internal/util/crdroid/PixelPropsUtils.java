@@ -154,10 +154,15 @@ public class PixelPropsUtils {
                 if (!isPixelDevice) {
                     if (processName.toLowerCase().contains("gservice")){
                         propsToChange.putAll(propsToChangePixel5a);
-                    }	
+                    }
                 }
                 }
             }
+
+
+	if (packageName.equals("com.snapchat.android")) {
+            propsToChange.putAll(propsToChangePixelXL);
+        }
 
         if (packageName.equals("com.google.android.gms")) {
             if (SystemProperties.getBoolean(SPOOF_PIXEL_GMS, true)) {
