@@ -42,6 +42,7 @@ import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.recents.OverviewProxyService;
 import com.android.systemui.settings.UserTracker;
 import com.android.systemui.statusbar.CommandQueue;
+import com.android.systemui.statusbar.NotificationListener;
 import com.android.systemui.statusbar.NotificationMediaManager;
 import com.android.systemui.statusbar.notification.collection.render.GroupExpansionManager;
 import com.android.systemui.statusbar.notification.collection.render.GroupMembershipManager;
@@ -155,7 +156,8 @@ public class Dependency {
     @Inject Lazy<DialogTransitionAnimator> mDialogTransitionAnimatorLazy;
     @Inject Lazy<UserTracker> mUserTrackerLazy;
     @Inject Lazy<StatusBarWindowController> mStatusBarWindowControllerLazy;
-
+    @Inject Lazy<NotificationListener> mNotificationListener;
+    
     @Inject
     public Dependency() {
     }
@@ -202,6 +204,7 @@ public class Dependency {
         mProviders.put(DialogTransitionAnimator.class, mDialogTransitionAnimatorLazy::get);
         mProviders.put(UserTracker.class, mUserTrackerLazy::get);
         mProviders.put(StatusBarWindowController.class, mStatusBarWindowControllerLazy::get);
+        mProviders.put(NotificationListener.class, mNotificationListener::get);
 
         Dependency.setInstance(this);
     }

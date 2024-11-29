@@ -43,6 +43,20 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/peek_display_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/peek_display_area_margin_top"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <com.android.systemui.notifications.ui.PeekDisplayView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+        
+    <LinearLayout
         android:id="@id/keyguard_indication_area"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
