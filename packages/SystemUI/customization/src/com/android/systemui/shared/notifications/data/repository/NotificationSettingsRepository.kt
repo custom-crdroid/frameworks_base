@@ -21,7 +21,6 @@ import com.android.systemui.shared.settings.data.repository.SecureSettingsReposi
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -42,42 +41,23 @@ class NotificationSettingsRepository(
             .distinctUntilChanged()
 
     /** The current state of the notification setting. */
-    suspend fun isShowNotificationsOnLockScreenEnabled(): StateFlow<Boolean> {
-        val peekDisplayNotification = secureSettingsRepository.getInt(
-            name = "peek_display_notifications",
-            defaultValue = 0
-        )
-
-        return if (peekDisplayNotification == 1) {
-            MutableStateFlow(false)
-        } else {
-            secureSettingsRepository
-                .intSetting(
-                    name = Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS,
-                )
-                .map { it == 1 }
-                .flowOn(backgroundDispatcher)
-                .stateIn(scope = scope)
-        }
-    }
+    suspend fun isShowNotificationsOnLockScreenEnabled(): StateFlow<Boolean> =
+        secureSettingsRepository
+            .intSetting(
+                name = Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS,
+            )
+            .map { it == 1 }
+            .flowOn(backgroundDispatcher)
+            .stateIn(
+                scope = scope,
+            )
 
     suspend fun setShowNotificationsOnLockscreenEnabled(enabled: Boolean) {
         withContext(backgroundDispatcher) {
-            val peekDisplayNotification = secureSettingsRepository.getInt(
-                name = "peek_display_notifications",
-                defaultValue = 0
+            secureSettingsRepository.setInt(
+                name = Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS,
+                value = if (enabled) 1 else 0,
             )
-            if (peekDisplayNotification == 1) {
-                secureSettingsRepository.setInt(
-                    name = Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS,
-                    value = 0
-                )
-            } else {
-                secureSettingsRepository.setInt(
-                    name = Settings.Secure.LOCK_SCREEN_SHOW_NOTIFICATIONS,
-                    value = if (enabled) 1 else 0,
-                )
-            }
         }
     }
 }

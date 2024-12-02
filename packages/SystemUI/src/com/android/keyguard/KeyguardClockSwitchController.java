@@ -699,17 +699,6 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         if (MigrateClocksToBlueprint.isEnabled()) {
             return;
         }
-        mClockStyle = mSecureSettings.getIntForUser(
-            ClockStyle.CLOCK_STYLE_KEY, 0, UserHandle.USER_CURRENT);
-
-        mEnableCustomClock = mClockStyle != 0;
-
-        mPeekDisplayEnabled = mSecureSettings.getIntForUser(
-            "peek_display_notifications", 0, UserHandle.USER_CURRENT) != 0;
-
-        mShowLockscreenWidgets = mSystemSettings.getIntForUser(
-            "lockscreen_widgets_enabled", 0, UserHandle.USER_CURRENT) != 0;
-
         mCanShowDoubleLineClock = mSecureSettings.getIntForUser(
             Settings.Secure.LOCKSCREEN_USE_DOUBLE_LINE_CLOCK, mView.getResources()
                     .getInteger(com.android.internal.R.integer.config_doublelineClockDefault),

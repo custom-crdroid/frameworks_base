@@ -154,12 +154,6 @@ constructor(
             featureFlags.isEnabled(Flags.LOCKSCREEN_ENABLE_LANDSCAPE) &&
                 // True on small landscape screens
                 applicationContext.resources.getBoolean(R.bool.force_small_clock_on_lockscreen)
-                
-                systemSettings.getIntForUser(
-                    "peek_display_notifications",
-                    0, // Default value
-                    UserHandle.USER_CURRENT
-                ) != 0
 
     private fun getClockSize(): ClockSizeSetting {
         return ClockSizeSetting.fromSettingValue(
@@ -168,11 +162,6 @@ constructor(
                 /* defaultValue= */ 1,
                 UserHandle.USER_CURRENT
             )
-            val peekDisplayEnabled = secureSettings.getIntForUser(
-            "peek_display_notifications",
-            0, // Default value
-            UserHandle.USER_CURRENT
-            ) != 0
         )
     }
 }

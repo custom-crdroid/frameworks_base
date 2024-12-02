@@ -1840,16 +1840,10 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     }
 
     private boolean shouldForceSmallClock() {
-        boolean customClockEnabled = Settings.Secure.getIntForUser(
-            mContentResolver, "clock_style", 0, UserHandle.USER_CURRENT) != 0;
-        boolean peekDisplayEnabled = Settings.Secure.getIntForUser(
-            mContentResolver, "peek_display_notifications", 0, UserHandle.USER_CURRENT) != 0;
-        boolean lockscreenWidgetsEnabled = Settings.System.getIntForUser(
-            mContentResolver, "lockscreen_widgets_enabled", 0, UserHandle.USER_CURRENT) != 0;
         return mFeatureFlags.isEnabled(Flags.LOCKSCREEN_ENABLE_LANDSCAPE)
                 && !isOnAod()
                 // True on small landscape screens
-                && mResources.getBoolean(R.bool.force_small_clock_on_lockscreen) ||(peekDisplayEnabled);
+                && mResources.getBoolean(R.bool.force_small_clock_on_lockscreen);
     }
 
     private void updateKeyguardStatusViewAlignment(boolean animate) {
