@@ -60,12 +60,12 @@ public class PixelPropsUtils {
         "BRAND", "google",
         "MANUFACTURER", "Google",
         "DEVICE", "komodo",
-        "FINGERPRINT", "google/komodo_beta/komodo:15/AP41.240925.009/12534705:user/release-keys",
+        "FINGERPRINT", "google/komodo_beta/komodo:Baklava/BP21.241018.009/12628839:user/release-keys",
         "MODEL", "Pixel 9 Pro XL",
         "PRODUCT", "komodo_beta",
-        "DEVICE_INITIAL_SDK_INT", "32",
-        "SECURITY_PATCH", "2024-10-05",
-        "ID", "AP41.240925.009"
+        "DEVICE_INITIAL_SDK_INT", "21",
+        "SECURITY_PATCH", "2024-11-05",
+        "ID", "BP21.241018.009"
     );
 
     static {
