@@ -249,7 +249,6 @@ import dalvik.system.CloseGuard;
 import dalvik.system.VMDebug;
 import dalvik.system.VMRuntime;
 import dalvik.system.ZipPathValidator;
-
 import libcore.io.ForwardingOs;
 import libcore.io.IoUtils;
 import libcore.io.Os;
@@ -3880,34 +3879,36 @@ public final class ActivityThread extends ClientTransactionHandler
 
     /**  Core implementation of activity launch. */
     private Activity performLaunchActivity(ActivityClientRecord r, Intent customIntent) {
-        ActivityInfo aInfo = r.activityInfo;
+    ActivityInfo aInfo = r.activityInfo;
 
+    try {
+        // Check Instrumentation context and packageInfo
         if (getInstrumentation() != null
                 && getInstrumentation().getContext() != null
                 && getInstrumentation().getContext().getApplicationInfo() != null
                 && getInstrumentation().isSdkSandboxAllowedToStartActivities()) {
-            // Activities launched from CTS-in-sandbox tests use a customized ApplicationInfo. See
-            // also {@link SdkSandboxManagerLocal#getSdkSandboxApplicationInfoForInstrumentation}.
-            r.packageInfo =
-                    getPackageInfo(
-                            getInstrumentation().getContext().getApplicationInfo(),
-                            mCompatibilityInfo,
-                            Context.CONTEXT_INCLUDE_CODE);
+            r.packageInfo = getPackageInfo(
+                    getInstrumentation().getContext().getApplicationInfo(),
+                    mCompatibilityInfo,
+                    Context.CONTEXT_INCLUDE_CODE);
         } else if (r.packageInfo == null) {
             r.packageInfo = getPackageInfo(aInfo.applicationInfo, mCompatibilityInfo,
                     Context.CONTEXT_INCLUDE_CODE);
         }
 
+        // Resolve the component if not already set
         ComponentName component = r.intent.getComponent();
         if (component == null) {
-            component = r.intent.resolveActivity(
-                mInitialApplication.getPackageManager());
+            component = r.intent.resolveActivity(mInitialApplication.getPackageManager());
+            if (component == null) {
+                throw new RuntimeException("Unable to resolve activity component");
+            }
             r.intent.setComponent(component);
         }
 
+        // Set target activity if applicable
         if (r.activityInfo.targetActivity != null) {
-            component = new ComponentName(r.activityInfo.packageName,
-                    r.activityInfo.targetActivity);
+            component = new ComponentName(r.activityInfo.packageName, r.activityInfo.targetActivity);
         }
 
         boolean isSandboxActivityContext =
@@ -3916,11 +3917,11 @@ public final class ActivityThread extends ClientTransactionHandler
                                 mSystemContext, r.intent);
         boolean isSandboxedSdkContextUsed = false;
         ContextImpl activityBaseContext;
+
+        // Initialize base context safely
         if (isSandboxActivityContext) {
             activityBaseContext = createBaseContextForSandboxActivity(r);
             if (activityBaseContext == null) {
-                // Failed to retrieve the SDK based sandbox activity context, falling back to the
-                // app based context.
                 activityBaseContext = createBaseContextForActivity(r);
             } else {
                 isSandboxedSdkContextUsed = true;
@@ -3928,129 +3929,109 @@ public final class ActivityThread extends ClientTransactionHandler
         } else {
             activityBaseContext = createBaseContextForActivity(r);
         }
+
+        if (activityBaseContext == null) {
+            throw new RuntimeException("Base context is null");
+        }
+
+        // Instantiate the Activity
         Activity activity = null;
         try {
-            java.lang.ClassLoader cl;
-            if (isSandboxedSdkContextUsed) {
-                // In case of sandbox activity, the context refers to the an SDK with no visibility
-                // on the SandboxedActivity java class, the App context should be used instead.
-                cl = activityBaseContext.getApplicationContext().getClassLoader();
-            } else {
-                cl = activityBaseContext.getClassLoader();
+            ClassLoader cl = isSandboxedSdkContextUsed
+                    ? activityBaseContext.getApplicationContext().getClassLoader()
+                    : activityBaseContext.getClassLoader();
+
+            if (cl == null) {
+                throw new RuntimeException("ClassLoader is null");
             }
-            activity = mInstrumentation.newActivity(
-                    cl, component.getClassName(), r.intent);
+
+            activity = mInstrumentation.newActivity(cl, component.getClassName(), r.intent);
             StrictMode.incrementExpectedActivityCount(activity.getClass());
             r.intent.setExtrasClassLoader(cl);
             r.intent.prepareToEnterProcess(isProtectedComponent(r.activityInfo),
                     activityBaseContext.getAttributionSource());
+
             if (r.state != null) {
                 r.state.setClassLoader(cl);
             }
         } catch (Exception e) {
             if (!mInstrumentation.onException(activity, e)) {
                 throw new RuntimeException(
-                    "Unable to instantiate activity " + component
-                    + ": " + e.toString(), e);
+                        "Unable to instantiate activity " + component + ": " + e.toString(), e);
             }
         }
 
-        try {
-            Application app = r.packageInfo.makeApplicationInner(false, mInstrumentation);
-
-            if (localLOGV) Slog.v(TAG, "Performing launch of " + r);
-            if (localLOGV) Slog.v(
-                    TAG, r + ": app=" + app
-                    + ", appName=" + app.getPackageName()
-                    + ", pkg=" + r.packageInfo.getPackageName()
-                    + ", comp=" + r.intent.getComponent().toShortString()
-                    + ", dir=" + r.packageInfo.getAppDir());
-
-            // updatePendingActivityConfiguration() reads from mActivities to update
-            // ActivityClientRecord which runs in a different thread. Protect modifications to
-            // mActivities to avoid race.
-            synchronized (mResourcesManager) {
-                mActivities.put(r.token, r);
-            }
-
-            if (activity != null) {
-                CharSequence title =
-                        r.activityInfo.loadLabel(activityBaseContext.getPackageManager());
-                Configuration config =
-                        new Configuration(mConfigurationController.getCompatConfiguration());
-                if (r.overrideConfig != null) {
-                    config.updateFrom(r.overrideConfig);
-                }
-                if (DEBUG_CONFIGURATION) Slog.v(TAG, "Launching activity "
-                        + r.activityInfo.name + " with config " + config);
-                Window window = null;
-                if (r.mPendingRemoveWindow != null && r.mPreserveWindow) {
-                    window = r.mPendingRemoveWindow;
-                    r.mPendingRemoveWindow = null;
-                    r.mPendingRemoveWindowManager = null;
-                }
-
-                // Activity resources must be initialized with the same loaders as the
-                // application context.
-                activityBaseContext.getResources().addLoaders(
-                        app.getResources().getLoaders().toArray(new ResourcesLoader[0]));
-
-                activityBaseContext.setOuterContext(activity);
-                activity.attach(activityBaseContext, this, getInstrumentation(), r.token,
-                        r.ident, app, r.intent, r.activityInfo, title, r.parent,
-                        r.embeddedID, r.lastNonConfigurationInstances, config,
-                        r.referrer, r.voiceInteractor, window, r.activityConfigCallback,
-                        r.assistToken, r.shareableActivityToken, r.initialCallerInfoAccessToken);
-
-                if (customIntent != null) {
-                    activity.mIntent = customIntent;
-                }
-                r.lastNonConfigurationInstances = null;
-                checkAndBlockForNetworkAccess();
-                activity.mStartedActivity = false;
-                int theme = r.activityInfo.getThemeResource();
-                if (theme != 0) {
-                    activity.setTheme(theme);
-                }
-
-                if (r.mSceneTransitionInfo != null) {
-                    activity.mSceneTransitionInfo = r.mSceneTransitionInfo;
-                    r.mSceneTransitionInfo = null;
-                }
-                activity.mLaunchedFromBubble = r.mLaunchedFromBubble;
-                activity.mCalled = false;
-                // Assigning the activity to the record before calling onCreate() allows
-                // ActivityThread#getActivity() lookup for the callbacks triggered from
-                // ActivityLifecycleCallbacks#onActivityCreated() or
-                // ActivityLifecycleCallback#onActivityPostCreated().
-                r.activity = activity;
-                if (r.isPersistable()) {
-                    mInstrumentation.callActivityOnCreate(activity, r.state, r.persistentState);
-                } else {
-                    mInstrumentation.callActivityOnCreate(activity, r.state);
-                }
-                if (!activity.mCalled) {
-                    throw new SuperNotCalledException(
-                        "Activity " + r.intent.getComponent().toShortString() +
-                        " did not call through to super.onCreate()");
-                }
-                r.mLastReportedWindowingMode = config.windowConfiguration.getWindowingMode();
-            }
-            r.setState(ON_CREATE);
-
-        } catch (SuperNotCalledException e) {
-            throw e;
-
-        } catch (Exception e) {
-            if (!mInstrumentation.onException(activity, e)) {
-                throw new RuntimeException(
-                    "Unable to start activity " + component
-                    + ": " + e.toString(), e);
-            }
+        // Initialize the Application and attach the Activity
+        Application app = r.packageInfo.makeApplicationInner(false, mInstrumentation);
+        if (app == null) {
+            throw new RuntimeException("Application instance is null");
         }
 
+        if (activity != null) {
+            CharSequence title = r.activityInfo.loadLabel(activityBaseContext.getPackageManager());
+            Configuration config = new Configuration(mConfigurationController.getCompatConfiguration());
+            if (r.overrideConfig != null) {
+                config.updateFrom(r.overrideConfig);
+            }
+
+            Window window = r.mPendingRemoveWindow != null && r.mPreserveWindow ? r.mPendingRemoveWindow : null;
+            if (window != null) {
+                r.mPendingRemoveWindow = null;
+                r.mPendingRemoveWindowManager = null;
+            }
+
+            activityBaseContext.getResources().addLoaders(
+                    app.getResources().getLoaders().toArray(new ResourcesLoader[0]));
+            activityBaseContext.setOuterContext(activity);
+
+            activity.attach(activityBaseContext, this, getInstrumentation(), r.token, r.ident, app, r.intent,
+                    r.activityInfo, title, r.parent, r.embeddedID, r.lastNonConfigurationInstances, config,
+                    r.referrer, r.voiceInteractor, window, r.activityConfigCallback, r.assistToken,
+                    r.shareableActivityToken, r.initialCallerInfoAccessToken);
+
+            if (customIntent != null) {
+                activity.mIntent = customIntent;
+            }
+
+            r.lastNonConfigurationInstances = null;
+            checkAndBlockForNetworkAccess();
+            activity.mStartedActivity = false;
+
+            int theme = r.activityInfo.getThemeResource();
+            if (theme != 0) {
+                activity.setTheme(theme);
+            }
+
+            activity.mCalled = false;
+            r.activity = activity;
+
+            if (r.isPersistable()) {
+                mInstrumentation.callActivityOnCreate(activity, r.state, r.persistentState);
+            } else {
+                mInstrumentation.callActivityOnCreate(activity, r.state);
+            }
+
+            if (!activity.mCalled) {
+                throw new SuperNotCalledException(
+                        "Activity " + r.intent.getComponent().toShortString()
+                                + " did not call through to super.onCreate()");
+            }
+
+            r.mLastReportedWindowingMode = config.windowConfiguration.getWindowingMode();
+        }
+
+        r.setState(ON_CREATE);
         return activity;
+
+    } catch (Exception e) {
+        if (!mInstrumentation.onException(null, e)) {
+            throw new RuntimeException(
+                    "Error occurred during activity launch: " + e.toString(), e);
+        }
+        return null;
     }
+}
+
 
     @Override
     public void handleStartActivity(ActivityClientRecord r,
